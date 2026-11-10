@@ -1,0 +1,44 @@
+{
+  "auto_start_windows": true,
+  "start_hidden": false,
+  "enable_shutdown": false,
+  "shutdown_h": "21",
+  "shutdown_m": "45",
+  "enable_sleep": false,
+  "sleep_h": "23",
+  "sleep_m": "00",
+  "github_user": "hanhtuanhunghan-lang",
+  "github_branch": "main",
+  "profiles": {
+    "thai_binh": {
+      "interval": 30,
+      "slots": [
+        {
+          "active": true,
+          "sh": "06",
+          "sm": "00",
+          "eh": "23",
+          "em": "30"
+        },
+        {
+          "active": false,
+          "sh": "00",
+          "sm": "00",
+          "eh": "00",
+          "em": "00"
+        },
+        {
+          "active": false,
+          "sh": "00",
+          "sm": "00",
+          "eh": "00",
+          "em": "00"
+        }
+      ],
+      "show_browser": false,
+      "remember": true,
+      "auto_run": true
+    }
+  },
+  "legacy_migrated": true
+}
