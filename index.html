@@ -33,13 +33,11 @@
 
         let currentUser = null;
 
-        const LOGIN_USERS_URLS = [
-
+                const LOGIN_USERS_URLS = [
+            `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/users.json?t=${Date.now()}`,
+            `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/users.json?t=${Date.now()}`,
             `users.json?t=${Date.now()}`,
-
-            `../users.json?t=${Date.now()}`,
-
-            `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/users.json?t=${Date.now()}`
+            `../users.json?t=${Date.now()}`
         ];
 
         // Bản bàn giao không gửi IP hoặc lịch sử đăng nhập ra dịch vụ bên ngoài.

@@ -4,6 +4,7 @@ Tên tool: Tool Quản lý User/Pass cho Web Báo Cáo Dư Nợ - Điện Lực 
 Mô tả: GUI giúp sếp Tuấn thêm/sửa/xóa danh sách thu ngân Điện Lực Thái Bình.
        Tự động hash mật khẩu (SHA-256) và xuất ra users.json để gắn vào web.
        Có tính năng nạp danh sách thu ngân từ file Excel (TNV.xlsx).
+       Có nút [Đồng bộ lên Web (GitHub)] để đẩy thẳng tài khoản lên Web ngay lập tức.
 Tác giả: Nguyen Tuan - Điện Lực Thái Bình
 SĐT: 0919089886
 """
@@ -17,6 +18,9 @@ import sys
 import logging
 import unicodedata
 import shutil
+import base64
+import urllib.request
+import urllib.error
 from datetime import datetime
 
 try:
@@ -24,12 +28,16 @@ try:
 except ImportError:
     pd = None
 
-PHIEN_BAN = "1.2"
+PHIEN_BAN = "1.3"
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 PROFILE_OUTPUTS = {
     "thai_binh": os.path.join(SCRIPT_DIR, "web", "thai_binh", "users.json"),
 }
+
+GITHUB_USER = "hanhtuanhunghan-lang"
+GITHUB_REPO = "BaoCaoThaiBinh"
+GITHUB_BRANCH = "main"
 
 def lay_profile_dang_chon():
     if len(sys.argv) > 1 and sys.argv[1] in PROFILE_OUTPUTS:
@@ -49,6 +57,49 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     encoding='utf-8'
 )
+
+def lay_github_token() -> str:
+    sec_path = os.path.join(SCRIPT_DIR, "runtime", "secrets.json")
+    if os.path.exists(sec_path):
+        try:
+            with open(sec_path, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            t = d.get("github_token", "")
+            if t.startswith("dpapi:"):
+                import win32crypt
+                raw = base64.b64decode(t.split(":", 1)[1])
+                res = win32crypt.CryptUnprotectData(raw, None, None, None, 0)
+                return (res[1] if isinstance(res, tuple) and len(res) > 1 and isinstance(res[1], (bytes, bytearray)) else res[0]).decode("utf-8")
+            if t.startswith("plain:"):
+                return base64.b64decode(t.split(":", 1)[1]).decode("utf-8")
+            if t:
+                return t
+        except Exception as e:
+            logging.error(f"Lỗi giải mã token secrets.json: {e}")
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+        advapi32 = ctypes.windll.advapi32
+        class CREDENTIAL(ctypes.Structure):
+            _fields_ = [
+                ('Flags', wintypes.DWORD), ('Type', wintypes.DWORD),
+                ('TargetName', wintypes.LPWSTR), ('Comment', wintypes.LPWSTR),
+                ('LastWritten', wintypes.FILETIME), ('CredentialBlobSize', wintypes.DWORD),
+                ('CredentialBlob', ctypes.POINTER(ctypes.c_byte)), ('Persist', wintypes.DWORD),
+                ('AttributeCount', wintypes.DWORD), ('Attributes', ctypes.c_void_p),
+                ('TargetAlias', wintypes.LPWSTR), ('UserName', wintypes.LPWSTR),
+            ]
+        pcred = ctypes.POINTER(CREDENTIAL)()
+        target = f'git:https://{GITHUB_USER}@github.com'
+        if advapi32.CredReadW(target, 1, 0, ctypes.byref(pcred)):
+            raw = bytes((ctypes.c_byte * pcred.contents.CredentialBlobSize).from_address(ctypes.addressof(pcred.contents.CredentialBlob.contents)))
+            token = raw.decode('utf-16le').strip()
+            advapi32.CredFree(pcred)
+            return token
+    except Exception:
+        pass
+    return ""
 
 def hash_mat_khau(mat_khau_goc: str) -> str:
     bytes_mat_khau = mat_khau_goc.encode("utf-8")
@@ -95,20 +146,12 @@ def ghi_danh_sach_user(danh_sach_user):
         logging.error(f"Lỗi ghi users.json: {e}")
         return False
 
-def tim_cot_theo_tu_khoa(columns, danh_sach_tu_khoa):
-    for col in columns:
-        col_khong_dau = _bo_dau(str(col))
-        for tk in danh_sach_tu_khoa:
-            if tk in col_khong_dau:
-                return col
-    return None
-
 class ToolQuanLyUser(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(f"Quản Lý Tài Khoản Web Dư Nợ — Điện Lực Thái Bình v{PHIEN_BAN}")
-        self.geometry("820x620")
-        self.minsize(700, 500)
+        self.geometry("860x640")
+        self.minsize(740, 520)
         self.configure(bg="#f1f5f9")
         self.users = doc_danh_sach_user()
         self.dong_dang_chon = None
@@ -116,7 +159,7 @@ class ToolQuanLyUser(tk.Tk):
         self.nap_du_lieu_len_bang()
 
     def tao_giao_dien(self):
-        khung_tren = tk.Frame(self, bg="#0054A6", height=60)
+        khung_tren = tk.Frame(self, bg="#0054A6", height=65)
         khung_tren.pack(fill=tk.X, side=tk.TOP)
         khung_tren.pack_propagate(False)
 
@@ -127,11 +170,11 @@ class ToolQuanLyUser(tk.Tk):
             fg="white",
             bg="#0054A6"
         )
-        lbl_tieu_de.pack(pady=8)
+        lbl_tieu_de.pack(pady=(6, 2))
 
         lbl_mo_ta = tk.Label(
             khung_tren,
-            text="Hồ sơ: Điện lực Thái Bình  |  Mật khẩu tự động băm SHA-256 an toàn",
+            text=f"GitHub: {GITHUB_USER}/{GITHUB_REPO}  |  Web: https://bao-cao-thai-binh.vercel.app/",
             font=("Segoe UI", 9),
             fg="#cbd5e1",
             bg="#0054A6"
@@ -154,7 +197,7 @@ class ToolQuanLyUser(tk.Tk):
         self.ent_username.grid(row=0, column=1, sticky="w", padx=5, pady=4)
 
         tk.Label(khung_nhap, text="Họ và tên:", font=("Segoe UI", 9, "bold"), bg="#f1f5f9").grid(row=0, column=2, sticky="w", padx=(15, 0), pady=4)
-        self.ent_ho_ten = ttk.Entry(khung_nhap, width=26, font=("Segoe UI", 10))
+        self.ent_ho_ten = ttk.Entry(khung_nhap, width=28, font=("Segoe UI", 10))
         self.ent_ho_ten.grid(row=0, column=3, sticky="w", padx=5, pady=4)
 
         tk.Label(khung_nhap, text="Mật khẩu mới:", font=("Segoe UI", 9, "bold"), bg="#f1f5f9").grid(row=1, column=0, sticky="w", pady=4)
@@ -175,38 +218,45 @@ class ToolQuanLyUser(tk.Tk):
 
         btn_them = tk.Button(
             khung_nut, text="➕ Thêm mới", bg="#16a34a", fg="white",
-            font=("Segoe UI", 9, "bold"), padx=12, pady=5, relief=tk.FLAT, cursor="hand2",
+            font=("Segoe UI", 9, "bold"), padx=10, pady=5, relief=tk.FLAT, cursor="hand2",
             command=self.xu_ly_them
         )
         btn_them.pack(side=tk.LEFT, padx=3)
 
         btn_sua = tk.Button(
             khung_nut, text="✏️ Cập nhật", bg="#2563eb", fg="white",
-            font=("Segoe UI", 9, "bold"), padx=12, pady=5, relief=tk.FLAT, cursor="hand2",
+            font=("Segoe UI", 9, "bold"), padx=10, pady=5, relief=tk.FLAT, cursor="hand2",
             command=self.xu_ly_sua
         )
         btn_sua.pack(side=tk.LEFT, padx=3)
 
         btn_xoa = tk.Button(
             khung_nut, text="🗑️ Xóa", bg="#dc2626", fg="white",
-            font=("Segoe UI", 9, "bold"), padx=12, pady=5, relief=tk.FLAT, cursor="hand2",
+            font=("Segoe UI", 9, "bold"), padx=10, pady=5, relief=tk.FLAT, cursor="hand2",
             command=self.xu_ly_xoa
         )
         btn_xoa.pack(side=tk.LEFT, padx=3)
 
         btn_lam_moi = tk.Button(
             khung_nut, text="🔄 Xóa trắng ô", bg="#64748b", fg="white",
-            font=("Segoe UI", 9), padx=10, pady=5, relief=tk.FLAT, cursor="hand2",
+            font=("Segoe UI", 9), padx=8, pady=5, relief=tk.FLAT, cursor="hand2",
             command=self.xoa_trang_o_nhap
         )
         btn_lam_moi.pack(side=tk.LEFT, padx=3)
 
         btn_nap_excel = tk.Button(
             khung_nut, text="📂 Nạp từ Excel", bg="#7c3aed", fg="white",
-            font=("Segoe UI", 9, "bold"), padx=12, pady=5, relief=tk.FLAT, cursor="hand2",
+            font=("Segoe UI", 9, "bold"), padx=10, pady=5, relief=tk.FLAT, cursor="hand2",
             command=self.xu_ly_nap_excel
         )
-        btn_nap_excel.pack(side=tk.LEFT, padx=(15, 3))
+        btn_nap_excel.pack(side=tk.LEFT, padx=(10, 3))
+
+        btn_dong_bo = tk.Button(
+            khung_nut, text="🚀 Đồng bộ lên Web (GitHub)", bg="#ea580c", fg="white",
+            font=("Segoe UI", 9, "bold"), padx=12, pady=5, relief=tk.FLAT, cursor="hand2",
+            command=self.xu_ly_dong_bo_github
+        )
+        btn_dong_bo.pack(side=tk.LEFT, padx=(12, 3))
 
         khung_bang = tk.Frame(self, bg="#f1f5f9")
         khung_bang.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 10))
@@ -301,7 +351,7 @@ class ToolQuanLyUser(tk.Tk):
         if ghi_danh_sach_user(self.users):
             self.nap_du_lieu_len_bang()
             self.xoa_trang_o_nhap()
-            messagebox.showinfo("Thành công", f"Đã thêm user '{username}' thành công!")
+            messagebox.showinfo("Thành công", f"Đã thêm user '{username}' thành công!\n(Hãy bấm [Đồng bộ lên Web (GitHub)] để áp dụng lên Web)")
 
     def xu_ly_sua(self):
         if self.dong_dang_chon is None:
@@ -327,7 +377,7 @@ class ToolQuanLyUser(tk.Tk):
         if ghi_danh_sach_user(self.users):
             self.nap_du_lieu_len_bang()
             self.xoa_trang_o_nhap()
-            messagebox.showinfo("Thành công", f"Đã cập nhật user '{username}' thành công!")
+            messagebox.showinfo("Thành công", f"Đã cập nhật user '{username}' thành công!\n(Hãy bấm [Đồng bộ lên Web (GitHub)] để áp dụng lên Web)")
 
     def xu_ly_xoa(self):
         if self.dong_dang_chon is None:
@@ -341,7 +391,7 @@ class ToolQuanLyUser(tk.Tk):
         if ghi_danh_sach_user(self.users):
             self.nap_du_lieu_len_bang()
             self.xoa_trang_o_nhap()
-            messagebox.showinfo("Thành công", f"Đã xóa user '{username}' thành công!")
+            messagebox.showinfo("Thành công", f"Đã xóa user '{username}' thành công!\n(Hãy bấm [Đồng bộ lên Web (GitHub)] để áp dụng lên Web)")
 
     def xu_ly_nap_excel(self):
         if pd is None:
@@ -376,12 +426,14 @@ class ToolQuanLyUser(tk.Tk):
                 parts = dong.split(maxsplit=1)
                 username = parts[0].strip()
                 ho_ten = parts[1].strip() if len(parts) > 1 else username
+                import re
+                ho_ten_clean = re.sub(r'^\d+\.\s*', '', ho_ten)
                 if username.lower() in map_users_hien_tai:
                     so_bo_qua += 1
                 else:
                     self.users.append({
                         "username": username,
-                        "ho_ten": ho_ten,
+                        "ho_ten": ho_ten_clean,
                         "pass_hash": hash_mac_dinh
                     })
                     map_users_hien_tai[username.lower()] = self.users[-1]
@@ -392,13 +444,69 @@ class ToolQuanLyUser(tk.Tk):
                 self.nap_du_lieu_len_bang()
                 messagebox.showinfo(
                     "Hoàn tất nạp Excel",
-                    f"Đã nạp thành công từ Excel:\n- Thêm mới: {so_them_moi} user (Mật khẩu mặc định: {mat_khau_mac_dinh})\n- Bỏ qua do đã tồn tại: {so_bo_qua} user."
+                    f"Đã nạp thành công từ Excel:\n- Thêm mới: {so_them_moi} user (Mật khẩu mặc định: {mat_khau_mac_dinh})\n- Bỏ qua do đã tồn tại: {so_bo_qua} user.\n(Hãy bấm [Đồng bộ lên Web (GitHub)] để áp dụng lên Web)"
                 )
             else:
                 messagebox.showinfo("Thông báo", f"Tất cả {so_bo_qua} user trong file Excel đã tồn tại trong danh sách.")
         except Exception as e:
             logging.error(f"Lỗi nạp Excel: {e}")
             messagebox.showerror("Lỗi đọc file", f"Không đọc được file Excel:\n{e}")
+
+    def xu_ly_dong_bo_github(self):
+        token = lay_github_token()
+        if not token:
+            messagebox.showerror(
+                "Chưa có Token",
+                "Không tìm thấy GitHub Token trong runtime/secrets.json!\nVui lòng mở DuNoPro hoặc kiểm tra cài đặt."
+            )
+            return
+
+        try:
+            with open(FILE_USERS_JSON, "rb") as f:
+                content_bytes = f.read()
+
+            api_url = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/users.json"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "DuNoPro-UserManager"
+            }
+
+            sha = None
+            req_get = urllib.request.Request(api_url, headers=headers)
+            try:
+                with urllib.request.urlopen(req_get) as resp:
+                    data_get = json.loads(resp.read().decode())
+                    sha = data_get.get("sha")
+            except urllib.error.HTTPError as e:
+                if e.code != 404:
+                    raise
+
+            put_body = {
+                "message": f"Dong bo users.json thai_binh tu tool QuanLyUser ({len(self.users)} user)",
+                "content": base64.b64encode(content_bytes).decode("ascii"),
+                "branch": GITHUB_BRANCH
+            }
+            if sha:
+                put_body["sha"] = sha
+
+            req_put = urllib.request.Request(
+                api_url,
+                data=json.dumps(put_body).encode("utf-8"),
+                headers={**headers, "Content-Type": "application/json"},
+                method="PUT"
+            )
+            with urllib.request.urlopen(req_put) as resp:
+                if resp.status in (200, 201):
+                    messagebox.showinfo(
+                        "Đồng bộ thành công",
+                        f"✅ Đã đồng bộ {len(self.users)} tài khoản lên GitHub ({GITHUB_REPO}) thành công!\nCác thu ngân có thể đăng nhập trên Web ngay lập tức."
+                    )
+                    return
+            messagebox.showwarning("Cảnh báo", "Lệnh gửi đi nhưng phản hồi không xác định.")
+        except Exception as e:
+            logging.error(f"Lỗi đồng bộ GitHub: {e}")
+            messagebox.showerror("Lỗi đồng bộ", f"Không thể đẩy users.json lên GitHub:\n{e}")
 
 if __name__ == "__main__":
     app = ToolQuanLyUser()
