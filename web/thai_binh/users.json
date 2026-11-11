@@ -1,65 +1,10 @@
 {
-  "cap_nhat_luc": "11/11/2026 08:06:01",
-  "tong_so": 13,
+  "cap_nhat_luc": "11/11/2026 08:13:59",
+  "tong_so": 2,
   "users": [
     {
       "username": "admin",
       "ho_ten": "Quản trị viên Điện lực Thái Bình",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408025",
-      "ho_ten": "ĐOÀN THỊ BƯỞI",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408026",
-      "ho_ten": "PHẠM HẢI OANH",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408027",
-      "ho_ten": "HÀ THỊ THU HIỀN",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408028",
-      "ho_ten": "NGUYỄN THỊ VÂN",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408029",
-      "ho_ten": "ĐẶNG THU HỒNG",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408030",
-      "ho_ten": "ĐOÀN THỊ THẮM",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408032",
-      "ho_ten": "NGUYỄN THỊ HÀ",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408036",
-      "ho_ten": "BÙI NAM TIẾN",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408043",
-      "ho_ten": "PHẠM THÙY LINH",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408044",
-      "ho_ten": "HOÀNG VĂN LUẬT",
-      "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
-    },
-    {
-      "username": "970408045",
-      "ho_ten": "BÙI KHẮC LỊCH",
       "pass_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
     },
     {
