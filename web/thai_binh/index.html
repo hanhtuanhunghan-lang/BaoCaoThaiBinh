@@ -33,9 +33,9 @@
 
         let currentUser = null;
 
-                        const LOGIN_USERS_URLS = [
-            `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/users.json?t=${Date.now()}`,
+                                const LOGIN_USERS_URLS = [
             `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/users.json?t=${Date.now()}`,
+            `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/users.json?t=${Date.now()}`,
             `users.json?t=${Date.now()}`,
             `../users.json?t=${Date.now()}`
         ];
@@ -2474,8 +2474,10 @@ function moZaloSauKhiCopy(msg, isMobile) {
 async function taiJsonDuNo() {
     const stamp = Date.now();
     const urls = [
-        `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/data_duno.json?t=${stamp}`,
-        `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/data_duno.json?t=${stamp}`
+        // Luon uu tien doc du lieu moi nhat truc tiep tu GitHub Raw
+        `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/data_duno.json?t=${stamp}`,
+        // Nguon du phong jsDelivr CDN
+        `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/data_duno.json?t=${stamp}`
     ];
     let lastError = '';
 

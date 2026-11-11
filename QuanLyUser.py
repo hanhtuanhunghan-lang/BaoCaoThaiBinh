@@ -498,6 +498,11 @@ class ToolQuanLyUser(tk.Tk):
             )
             with urllib.request.urlopen(req_put) as resp:
                 if resp.status in (200, 201):
+                    try:
+                        purge_url = f"https://purge.jsdelivr.net/gh/{GITHUB_USER}/{GITHUB_REPO}@{GITHUB_BRANCH}/users.json"
+                        urllib.request.urlopen(purge_url, timeout=5)
+                    except Exception:
+                        pass
                     messagebox.showinfo(
                         "Đồng bộ thành công",
                         f"✅ Đã đồng bộ {len(self.users)} tài khoản lên GitHub ({GITHUB_REPO}) thành công!\nCác thu ngân có thể đăng nhập trên Web ngay lập tức."

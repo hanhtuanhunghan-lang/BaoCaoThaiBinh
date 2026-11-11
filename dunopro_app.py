@@ -604,6 +604,16 @@ class DebtPipeline:
         numeric = pd.to_numeric(cleaned, errors="coerce").fillna(0)
         return numeric.apply(lambda x: f"{x:,.0f}".replace(",", "."))
 
+    @staticmethod
+    def _purge_jsdelivr(github_user: str, repo: str, branch: str, file_name: str, log: Callable[[str], None]) -> None:
+        try:
+            purge_url = f"https://purge.jsdelivr.net/gh/{github_user}/{repo}@{branch}/{file_name}"
+            res = requests.get(purge_url, timeout=5)
+            if res.status_code == 200:
+                log(f"⚡ Da lam moi cache CDN jsDelivr: {file_name}")
+        except Exception:
+            pass
+
     def clean_and_merge(self, profile: ProfileDef, log: Callable[[str], None]) -> Optional[Path]:
         source_dir = DOWNLOADS_DIR / profile.profile_id
         frames: List[pd.DataFrame] = []
@@ -751,6 +761,7 @@ class DebtPipeline:
         put_res = self._github_request("PUT", api_url, headers=headers, json=body, log=log, target=target)
         if put_res and put_res.status_code in (200, 201):
             log(f"✅ Push GitHub thanh cong -> {profile.github_repo}/data_duno.json")
+            self._purge_jsdelivr(github_user, profile.github_repo, github_branch, "data_duno.json", log)
             # users.json chi duoc dong bo khi bam nut thu cong tren giao dien.
             return True
 
@@ -937,6 +948,7 @@ class DebtPipeline:
             put_res = self._github_request("PUT", api_url, headers=headers, json=body, log=log, target=target)
             if put_res and put_res.status_code in (200, 201):
                 log(f"Push GitHub thanh cong -> {profile.github_repo}/{file_name}")
+                self._purge_jsdelivr(github_user, profile.github_repo, github_branch, file_name, log)
             else:
                 if put_res is not None:
                     self._log_github_failure(
@@ -1446,6 +1458,7 @@ class DebtPipeline:
         put_res = self._github_request("PUT", api_url, headers=headers, json=body, log=log, target=target)
         if put_res and put_res.status_code in (200, 201):
             log(f"✅ Push GitHub thanh cong -> {profile.github_repo}/data_duno.json")
+            self._purge_jsdelivr(github_user, profile.github_repo, github_branch, "data_duno.json", log)
             # users.json chi duoc dong bo khi bam nut thu cong tren giao dien.
             return True
 
