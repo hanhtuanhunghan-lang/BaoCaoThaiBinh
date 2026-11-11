@@ -33,9 +33,9 @@
 
         let currentUser = null;
 
-                const LOGIN_USERS_URLS = [
-            `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/users.json?t=${Date.now()}`,
+                        const LOGIN_USERS_URLS = [
             `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/users.json?t=${Date.now()}`,
+            `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/users.json?t=${Date.now()}`,
             `users.json?t=${Date.now()}`,
             `../users.json?t=${Date.now()}`
         ];
@@ -2474,9 +2474,8 @@ function moZaloSauKhiCopy(msg, isMobile) {
 async function taiJsonDuNo() {
     const stamp = Date.now();
     const urls = [
-        // Luon doc du lieu moi tu GitHub, khong lay file data tren Vercel.
-        `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/data_duno.json?t=${stamp}`,
-        `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/data_duno.json?t=${stamp}`
+        `https://cdn.jsdelivr.net/gh/hanhtuanhunghan-lang/BaoCaoThaiBinh@main/data_duno.json?t=${stamp}`,
+        `https://raw.githubusercontent.com/hanhtuanhunghan-lang/BaoCaoThaiBinh/main/data_duno.json?t=${stamp}`
     ];
     let lastError = '';
 
@@ -2487,7 +2486,11 @@ async function taiJsonDuNo() {
                 lastError = `${url} -> HTTP ${res.status}`;
                 continue;
             }
-            return await res.json();
+            const data = await res.json();
+            if (data && Array.isArray(data.du_lieu) && data.du_lieu.length > 0) {
+                return data;
+            }
+            lastError = `${url} -> Dữ liệu trống`;
         } catch (error) {
             lastError = `${url} -> ${error.message || error}`;
         }
@@ -2518,7 +2521,10 @@ async function taiDuLieuDuNo() {
 
 
 
-        if (records.length === 0) return;
+        if (records.length === 0) {
+            document.getElementById('cap-nhat-luc-duno').textContent = 'Chưa có dữ liệu dư nợ. Vui lòng bấm Run now trên DuNoPro để cập nhật.';
+            return;
+        }
 
         globalRecords = records; 
 
